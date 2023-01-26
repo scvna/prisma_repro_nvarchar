@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = "sqlserver://repro-db:1433;database=TestDB;user=sa;password=Prisma123@;encrypt=true;trustServerCertificate=true;connect_timeout=10;max_connection_lifetime=1200"
+}
+
+model Imperfection {
+  ImperfectionId      Int      @id(map: "PK_Imperfection") @default(autoincrement())
+  VehicleId           Int
+  ContentFileId       Int?
+  OverrideName        String?  @db.VarChar(200)
+  OverrideDescription String?  @db.VarChar(500)
+  CreatedAt           DateTime
+  UpdatedAt           DateTime @updatedAt
+  UpdatedBy           String?  @db.VarChar(100)
+  IsHidden            Boolean?
+  IsReviewed          Boolean?
+  File                File?    @relation(fields: [ContentFileId], references: [FileId], onDelete: NoAction, onUpdate: NoAction, map: "FK_Imperfection_File")
+
+  @@index([VehicleId], map: "IX_repro_Imperfection_VehicleId")
+}
+
+model User {
+  UserId        Int       @id(map: "PK_repro_User") @default(autoincrement()) @db.SmallInt
+  Email         String    @unique(map: "AK_repro_User_Email") @db.VarChar(128)
+  Name          String    @db.VarChar(128)
+  CreatedAt     DateTime
+  UpdatedAt     DateTime  @updatedAt
+  DeactivatedAt DateTime?
+  File          File[]
+}
+
+model File {
+  FileId             Int            @id(map: "PK_File") @default(autoincrement())
+  Url                String?        @unique(map: "AK_File_Url") @db.VarChar(200)
+  CreatedAt          DateTime
+  UpdatedAt          DateTime       @updatedAt
+  ThumbnailFileId    Int?
+  PhotographerUserId Int?           @db.SmallInt
+  ThumbnailFile      File?          @relation("FileToFile_ThumbnailFileId", fields: [ThumbnailFileId], references: [FileId], onDelete: NoAction, onUpdate: NoAction, map: "FK_File_ThumbnailFile")
+  other_File         File[]         @relation("FileToFile_ThumbnailFileId")
+  User               User?          @relation(fields: [PhotographerUserId], references: [UserId], onDelete: NoAction, onUpdate: NoAction, map: "FK_repro_File_User")
+  Imperfection       Imperfection[]
+
+  @@index([UpdatedAt], map: "IX_repro_File_UpdatedAt")
+}

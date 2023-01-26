@@ -1,0 +1,16 @@
+version: "3.4"
+services:
+  repro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "./wait-for-it/wait-for-it.sh -h repro-db -p 1433 -t 90 &&
+                    npx prisma migrate deploy &&
+                    npx ts-node index.ts"
+  repro-db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - 1433:1433
+    environment:
+      - SA_PASSWORD=Prisma123@
+      - ACCEPT_EULA=Y
